@@ -1,0 +1,13 @@
+Script started on Tue Apr 18 14:01:01 2023
+]0;shreeya@r1n00.darwin:~/CISC372_picProject[?1034h[shreeya@r1n00 CISC372_picProject]$ srun ./image_pthread pic1.jpg edge
+Took 0 seconds
+]0;shreeya@r1n00.darwin:~/CISC372_picProject[shreeya@r1n00 CISC372_picProject]$ srun ./image_omp pic1.jpg edge
+slurmstepd: error: execve(): /home/3065/CISC372_picProject/./image_omp: Permission denied
+srun: error: r1n00: task 0: Exited with exit code 13
+]0;shreeya@r1n00.darwin:~/CISC372_picProject[shreeya@r1n00 CISC372_picProject]$ srun image_omp pic1.jpg edge
+slurmstepd: error: execve(): image_omp: Permission denied
+srun: error: r1n00: task 0: Exited with exit code 13
+]0;shreeya@r1n00.darwin:~/CISC372_picProject[shreeya@r1n00 CISC372_picProject]$ ./  ls    exit
+exit
+
+Script done on Tue Apr 18 14:02:43 2023
