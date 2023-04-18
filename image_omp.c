@@ -3,14 +3,20 @@
 #include <time.h>
 #include <string.h>
 #include "image.h"
-
+#include <omp.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-#include <omp.h>
 
+int min(int a, int b){
+    if (a < b){
+    	return a;
+    } else{
+    	return b;
+    }
+}
 //An array of kernel matrices to be used for image convolution.  
 //The indexes of these match the enumeration from the header file. ie. algorithms[BLUR] returns the kernel corresponding to a box blur.
 Matrix algorithms[]={
@@ -21,14 +27,6 @@ Matrix algorithms[]={
     {{-2,-1,0},{-1,1,1},{0,1,2}},
     {{0,0,0},{0,1,0},{0,0,0}}
 };
-
-int minimum(int a, int b){
-	if (a < b){
-		return a;
-	} else{
-		return b;
-	}
-}
 
 
 //getPixelValue - Computes the value of a specific pixel on a specific channel using the selected convolution kernel
@@ -116,7 +114,6 @@ int main(int argc,char** argv){
         printf("Error loading file %s.\n",fileName);
         return -1;
     }
-    
     t1=time(NULL);  
     destImage.bpp=srcImage.bpp;
     destImage.height=srcImage.height;

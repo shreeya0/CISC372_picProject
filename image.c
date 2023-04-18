@@ -106,7 +106,6 @@ int main(int argc,char** argv){
         printf("Error loading file %s.\n",fileName);
         return -1;
     }
-    //moved time start per email with silber
     t1=time(NULL);  
     destImage.bpp=srcImage.bpp;
     destImage.height=srcImage.height;
