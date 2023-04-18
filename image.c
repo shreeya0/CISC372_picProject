@@ -2,7 +2,6 @@
 #include <stdint.h>
 #include <time.h>
 #include <string.h>
-#include <pthread.h>
 #include "image.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -13,22 +12,6 @@
 
 //An array of kernel matrices to be used for image convolution.  
 //The indexes of these match the enumeration from the header file. ie. algorithms[BLUR] returns the kernel corresponding to a box blur.
-struct arg_struct {
-	Image* source_image; 
-	Image* dest_image; 
-	enum KernelTypes type;
-	long rank;
-	int num_threads;
-};
-
-int minimum(int a, int b){
-	if (a < b){
-		return a;
-	} else{
-		return b;
-	}
-}
-
 Matrix algorithms[]={
     {{0,-1,0},{-1,4,-1},{0,-1,0}},
     {{0,-1,0},{-1,5,-1},{0,-1,0}},
@@ -73,25 +56,16 @@ uint8_t getPixelValue(Image* srcImage,int x,int y,int bit,Matrix algorithm){
 //            destImage: A pointer to a  pre-allocated (including space for the pixel array) structure to receive the convoluted image.  It should be the same size as srcImage
 //            algorithm: The kernel matrix to use for the convolution
 //Returns: Nothing
-void convolute(void* vars){
-    struct args_struct *args = vars;
-    Image* srcImage = args->source_image;
-    Image* destImage = args->dest_image;    
-    long my_rank = args->rank;
-    int thread_count = args->thread_count;
+void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
     int row,pix,bit,span;
-    int start = (srcImage->height / thread_count) * my_rank + 1;
-    int end = ((srcImage->height) / thread_count) * (my_rank + 1);
-    int endfr = minimum(end, srcImage->height);
     span=srcImage->bpp*srcImage->bpp;
-    for (row=start;row<=endfr;row++){
+    for (row=0;row<srcImage->height;row++){
         for (pix=0;pix<srcImage->width;pix++){
             for (bit=0;bit<srcImage->bpp;bit++){
-                destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,algorithms[args->type]);
+                destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,algorithm);
             }
         }
     }
-    free(vars);
 }
 
 //Usage: Prints usage information for the program
@@ -117,8 +91,6 @@ enum KernelTypes GetKernelType(char* type){
 //argv is expected to take 2 arguments.  First is the source file name (can be jpg, png, bmp, tga).  Second is the lower case name of the algorithm.
 int main(int argc,char** argv){
     long t1,t2;
-    int num_threads = 10;
-    t1=time(NULL);
 
     stbi_set_flip_vertically_on_load(0); 
     if (argc!=3) return Usage();
@@ -134,32 +106,19 @@ int main(int argc,char** argv){
         printf("Error loading file %s.\n",fileName);
         return -1;
     }
+    //moved time start per email with silber
+    t1=time(NULL);  
     destImage.bpp=srcImage.bpp;
     destImage.height=srcImage.height;
     destImage.width=srcImage.width;
     destImage.data=malloc(sizeof(uint8_t)*destImage.width*destImage.bpp*destImage.height);
-    
-    pthread_t* thread_handles;
-    thread_handles = (pthread_t*) malloc(num_threads * sizeof(pthread_t));
-    for(long thread = 0; thread < num_threads; thread++){
-        struct arg_struct *args = malloc(sizeof(struct arg_struct));
-	args->source_image = &srcImage;
-	args->dest_image = &destImage;
-	args->type = type; 
-	args->rank = thread;
-	args->num_threads = num_threads;
-	pthread_create(&thread_handles[thread], NULL, &convolute ,args);
-    }
 
+    convolute(&srcImage,&destImage,algorithms[type]);
+    t2=time(NULL);
     stbi_write_png("output.png",destImage.width,destImage.height,destImage.bpp,destImage.data,destImage.bpp*destImage.width);
     stbi_image_free(srcImage.data);
     
-    for (long thread = 0; thread < num_threads; thread++){
-    	pthread_join(thread_handles[thread], NULL);
-    }
-    free(thread_handles);
     free(destImage.data);
-    t2=time(NULL);
     printf("Took %ld seconds\n",t2-t1);
    return 0;
 }
