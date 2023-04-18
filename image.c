@@ -77,15 +77,17 @@ void convolute(void* vars){
     struct args_struct *args = vars;
     Image* srcImage = args->source_image;
     Image* destImage = args->dest_image;    
+    long my_rank = args->rank;
+    int thread_count = args->thread_count;
     int row,pix,bit,span;
     int start = (srcImage->height / thread_count) * my_rank + 1;
-    int end = (srcImage->height) / thread_count) * (my_rank + 1);
-    int endfr = min(end, srcImage->height);
+    int end = ((srcImage->height) / thread_count) * (my_rank + 1);
+    int endfr = minimum(end, srcImage->height);
     span=srcImage->bpp*srcImage->bpp;
     for (row=start;row<=endfr;row++){
         for (pix=0;pix<srcImage->width;pix++){
             for (bit=0;bit<srcImage->bpp;bit++){
-                destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,algorithm);
+                destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,algorithms[args->type]);
             }
         }
     }
@@ -143,10 +145,10 @@ int main(int argc,char** argv){
         struct arg_struct *args = malloc(sizeof(struct arg_struct));
 	args->source_image = &srcImage;
 	args->dest_image = &destImage;
-	args->tyoe = type; 
+	args->type = type; 
 	args->rank = thread;
 	args->num_threads = num_threads;
-	pthread_create(&thread_handle[thread], NULL, &convolute,args);
+	pthread_create(&thread_handles[thread], NULL, &convolute ,args);
     }
 
     stbi_write_png("output.png",destImage.width,destImage.height,destImage.bpp,destImage.data,destImage.bpp*destImage.width);
